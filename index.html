@@ -768,20 +768,29 @@
     let globalBills = [];
     let calCurrentDate = new Date();
 
-    const gridEl = document.getElementById("scheduleGrid");
-    hours.forEach(hour => {
-        const slot = document.createElement("div");
-        slot.className = "time-slot";
-        slot.innerHTML = `
-            <div class="time-label">${hour}</div>
-            <div class="slot-body">
-                <textarea class="auto-expand" id="time_${hour}" placeholder="—" oninput="adjustHeight(this); saveAgenda();"></textarea>
-                <div id="attach_container_${hour}"></div>
-            </div>
-            <button class="attach-btn" title="Anexar Link/Documento" onclick="addAttachment('${hour}')"><i class="fa-solid fa-paperclip"></i></button>
-        `;
-        gridEl.appendChild(slot);
-    });
+    function renderScheduleGrid(scheduleData = {}) {
+        const gridEl = document.getElementById("scheduleGrid");
+        gridEl.innerHTML = "";
+
+        hours.forEach(hour => {
+            const val = scheduleData[hour] || "";
+            const slot = document.createElement("div");
+            slot.className = "time-slot";
+            slot.innerHTML = `
+                <div class="time-label">${hour}</div>
+                <div class="slot-body">
+                    <textarea class="auto-expand" id="time_${hour}" placeholder="—" oninput="adjustHeight(this); saveAgenda();">${val}</textarea>
+                    <div id="attach_container_${hour}"></div>
+                </div>
+                <button class="attach-btn" title="Anexar Link/Documento" onclick="addAttachment('${hour}')"><i class="fa-solid fa-paperclip"></i></button>
+            `;
+            gridEl.appendChild(slot);
+            
+            const textarea = slot.querySelector("textarea");
+            adjustHeight(textarea);
+            renderAttachment(hour);
+        });
+    }
 
     function adjustHeight(el) {
         if (!el) return;
@@ -790,7 +799,9 @@
     }
 
     const datePicker = document.getElementById("selectedDate");
-    datePicker.value = new Date().toISOString().split('T')[0];
+    if (!datePicker.value) {
+        datePicker.value = new Date().toISOString().split('T')[0];
+    }
 
     function updateDateDisplay(date) {
         const daysWeek = ["DOMINGO", "SEGUNDA-FEIRA", "TERÇA-FEIRA", "QUARTA-FEIRA", "QUINTA-FEIRA", "SEXTA-FEIRA", "SÁBADO"];
@@ -857,6 +868,7 @@
 
     function renderAttachment(hour) {
         const container = document.getElementById(`attach_container_${hour}`);
+        if (!container) return;
         if (attachments[hour]) {
             const att = attachments[hour];
             container.innerHTML = `
@@ -1193,7 +1205,8 @@
         body += `\n⏰ *COMPROMISSOS:*\n`;
         let hasEvents = false;
         hours.forEach(hour => {
-            const val = document.getElementById(`time_${hour}`).value;
+            const el = document.getElementById(`time_${hour}`);
+            const val = el ? el.value : "";
             const att = attachments[hour];
             if (val.trim() !== "" || att) {
                 hasEvents = true;
@@ -1330,16 +1343,10 @@
 
             attachments = data.attachments || {};
 
-            hours.forEach(hour => {
-                const el = document.getElementById(`time_${hour}`);
-                if (el) {
-                    el.value = (data.schedule && data.schedule[hour]) ? data.schedule[hour] : "";
-                    adjustHeight(el);
-                }
-                renderAttachment(hour);
-            });
+            // Renderiza os horários preenchidos com os dados salvos da data
+            renderScheduleGrid(data.schedule || {});
         } else {
-            // Limpa os campos se for um dia sem dados salvos
+            // Se não houver dados para o dia selecionado, redefinimos tudo para vazio
             document.getElementById("p1_text").value = "";
             document.getElementById("p1_check").checked = false;
             document.getElementById("p2_text").value = "";
@@ -1364,14 +1371,8 @@
 
             attachments = {};
 
-            hours.forEach(hour => {
-                const el = document.getElementById(`time_${hour}`);
-                if (el) {
-                    el.value = "";
-                    adjustHeight(el);
-                }
-                renderAttachment(hour);
-            });
+            // Renderiza os horários totalmente vazios
+            renderScheduleGrid({});
         }
 
         checkDailyBillsAlert();
