@@ -674,6 +674,7 @@
 <script>
     let isRegisterMode = false;
     let currentLoadedDate = "";
+    let isLoadingAgenda = false;
 
     window.onload = function() {
         checkAuth();
@@ -1282,6 +1283,10 @@
     setInterval(checkNotifications, 30000);
 
     function saveAgenda(dateToSave = currentLoadedDate) {
+        // Alterar os campos para exibir outro dia não pode sobrescrever os
+        // dados já gravados com os valores vazios da tela em transição.
+        if (isLoadingAgenda) return;
+
         // Usa a data gravada na visualização para garantir o salvamento no dia certo
         const saveDate = dateToSave;
         if (!saveDate) return;
@@ -1316,6 +1321,9 @@
     function loadAgenda() {
         const selectedDate = datePicker.value;
         if (!selectedDate) return;
+
+        isLoadingAgenda = true;
+        try {
 
         // Atualiza o rastreamento do dia atual carregado
         currentLoadedDate = selectedDate;
@@ -1391,6 +1399,9 @@
         }
 
         checkDailyBillsAlert();
+        } finally {
+            isLoadingAgenda = false;
+        }
     }
 </script>
 </body>
