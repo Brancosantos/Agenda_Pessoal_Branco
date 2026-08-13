@@ -515,7 +515,7 @@
     <div class="controls-bar">
         <div style="display: flex; align-items: center; gap: 8px;">
             <button class="btn btn-outline" onclick="changeDate(-1)"><i class="fa-solid fa-chevron-left"></i></button>
-            <input type="date" id="selectedDate" onchange="saveAgenda(); loadAgenda();">
+            <input type="date" id="selectedDate" onchange="onDateInputChange(this.value)">
             <button class="btn btn-outline" onclick="changeDate(1)"><i class="fa-solid fa-chevron-right"></i></button>
             <button class="btn btn-outline" onclick="goToday()">Hoje</button>
         </div>
@@ -673,6 +673,7 @@
 
 <script>
     let isRegisterMode = false;
+    let currentLoadedDate = "";
 
     window.onload = function() {
         checkAuth();
@@ -755,7 +756,7 @@
     const quotes = [
         "Continue curiosa, continue estranha, continue gentil e não deixe ninguém dizer que você não é suficiente.",
         "Pequenos passos todos os dias levam a grandes resultados.",
-        "Foque no processo, o resultado virá naturalmente.",
+        "Foque no processo, o resultado virá naturally.",
         "Sua única competição é quem você foi ontem.",
         "Organizar o tempo é construir liberdade."
     ];
@@ -819,19 +820,28 @@
         document.getElementById("dailyQuote").innerText = quotes[quoteIndex];
     }
 
-    function changeDate(days) {
-        saveAgenda(); // Salva as mudanças atuais antes de mudar de dia
-        const parts = datePicker.value.split('-');
-        const currentDate = new Date(parts[0], parts[1] - 1, parts[2]);
-        currentDate.setDate(currentDate.getDate() + days);
-        datePicker.value = currentDate.toISOString().split('T')[0];
+    function navigateToDate(newDateStr) {
+        if (!newDateStr || newDateStr === currentLoadedDate) return;
+
+        // Save the date currently rendered before replacing it with another day.
+        saveAgenda(currentLoadedDate);
+        datePicker.value = newDateStr;
         loadAgenda();
     }
 
+    function onDateInputChange(newDateStr) {
+        navigateToDate(newDateStr);
+    }
+
+    function changeDate(days) {
+        const parts = datePicker.value.split('-');
+        const currentDate = new Date(parts[0], parts[1] - 1, parts[2]);
+        currentDate.setDate(currentDate.getDate() + days);
+        navigateToDate(currentDate.toISOString().split('T')[0]);
+    }
+
     function goToday() {
-        saveAgenda();
-        datePicker.value = new Date().toISOString().split('T')[0];
-        loadAgenda();
+        navigateToDate(new Date().toISOString().split('T')[0]);
     }
 
     function addWater(val) {
@@ -1125,10 +1135,8 @@
     }
 
     function selectDateFromCal(dateStr) {
-        saveAgenda();
-        datePicker.value = dateStr;
         closeCalendarModal();
-        loadAgenda();
+        navigateToDate(dateStr);
     }
 
     function renderCalendar() {
@@ -1273,9 +1281,10 @@
     }
     setInterval(checkNotifications, 30000);
 
-    function saveAgenda() {
-        const selectedDate = datePicker.value;
-        if (!selectedDate) return;
+    function saveAgenda(dateToSave = currentLoadedDate) {
+        // Usa a data gravada na visualização para garantir o salvamento no dia certo
+        const saveDate = dateToSave;
+        if (!saveDate) return;
 
         const scheduleData = {};
         hours.forEach(hour => {
@@ -1301,12 +1310,15 @@
             attachments: attachments
         };
 
-        localStorage.setItem(`agenda_${selectedDate}`, JSON.stringify(data));
+        localStorage.setItem(`agenda_${saveDate}`, JSON.stringify(data));
     }
 
     function loadAgenda() {
         const selectedDate = datePicker.value;
         if (!selectedDate) return;
+
+        // Atualiza o rastreamento do dia atual carregado
+        currentLoadedDate = selectedDate;
 
         const [year, month, day] = selectedDate.split('-');
         updateDateDisplay(new Date(year, month - 1, day));
