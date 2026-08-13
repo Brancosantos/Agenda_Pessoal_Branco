@@ -1301,85 +1301,85 @@
 
     // FUNÇÃO DE CARREGAMENTO CORRIGIDA
     function loadAgenda() {
-        const selectedDate = datePicker.value;
-        if (!selectedDate) return;
+    const selectedDate = datePicker.value;
+    if (!selectedDate) return;
 
-        const [year, month, day] = selectedDate.split('-');
-        updateDateDisplay(new Date(year, month - 1, day));
+    const [year, month, day] = selectedDate.split('-');
+    updateDateDisplay(new Date(year, month - 1, day));
 
-        const savedTheme = localStorage.getItem('agenda_theme') || 'default';
-        document.getElementById('themeSelect').value = savedTheme;
-        changeTheme(savedTheme);
+    const savedTheme = localStorage.getItem('agenda_theme') || 'default';
+    document.getElementById('themeSelect').value = savedTheme;
+    changeTheme(savedTheme);
 
-        loadGlobalBills();
+    loadGlobalBills();
 
-        const savedData = localStorage.getItem(`agenda_${selectedDate}`);
-        if (savedData) {
-            const data = JSON.parse(savedData);
-            document.getElementById("p1_text").value = data.p1_text || "";
-            document.getElementById("p1_check").checked = !!data.p1_check;
-            document.getElementById("p2_text").value = data.p2_text || "";
-            document.getElementById("p2_check").checked = !!data.p2_check;
-            document.getElementById("p3_text").value = data.p3_text || "";
-            document.getElementById("p3_check").checked = !!data.p3_check;
+    const savedData = localStorage.getItem(`agenda_${selectedDate}`);
+    
+    if (savedData) {
+        const data = JSON.parse(savedData);
+        
+        // Carrega valores salvos
+        document.getElementById("p1_text").value = data.p1_text || "";
+        document.getElementById("p1_check").checked = !!data.p1_check;
+        document.getElementById("p2_text").value = data.p2_text || "";
+        document.getElementById("p2_check").checked = !!data.p2_check;
+        document.getElementById("p3_text").value = data.p3_text || "";
+        document.getElementById("p3_check").checked = !!data.p3_check;
 
-            document.getElementById("h1_check").checked = !!data.h1_check;
-            document.getElementById("h2_check").checked = !!data.h2_check;
-            document.getElementById("h3_check").checked = !!data.h3_check;
+        document.getElementById("h1_check").checked = !!data.h1_check;
+        document.getElementById("h2_check").checked = !!data.h2_check;
+        document.getElementById("h3_check").checked = !!data.h3_check;
 
-            waterGlasses = data.water || 0;
-            document.getElementById("waterCount").innerText = waterGlasses;
-            document.getElementById("waterTotal").innerText = `${waterGlasses * 200} ml / 2000 ml`;
+        waterGlasses = data.water || 0;
+        document.getElementById("waterCount").innerText = waterGlasses;
+        document.getElementById("waterTotal").innerText = `${waterGlasses * 200} ml / 2000 ml`;
 
-            document.getElementById("finIn").value = data.finIn || "";
-            document.getElementById("finOut").value = data.finOut || "";
-            
-            const inc = parseFloat(data.finIn) || 0;
-            const out = parseFloat(data.finOut) || 0;
-            document.getElementById("finBalance").innerText = `Saldo: R$ ${(inc - out).toFixed(2)}`;
+        document.getElementById("finIn").value = data.finIn || "";
+        document.getElementById("finOut").value = data.finOut || "";
+        
+        const inc = parseFloat(data.finIn) || 0;
+        const out = parseFloat(data.finOut) || 0;
+        document.getElementById("finBalance").innerText = `Saldo: R$ ${(inc - out).toFixed(2)}`;
 
-            document.getElementById("dailyNotes").value = data.notes || "";
-            adjustHeight(document.getElementById("dailyNotes"));
+        document.getElementById("dailyNotes").value = data.notes || "";
+        adjustHeight(document.getElementById("dailyNotes"));
 
-            attachments = data.attachments || {};
+        attachments = data.attachments || {};
 
-            // Renderiza os horários preenchidos com os dados salvos da data
-            renderScheduleGrid(data.schedule || {});
-        } else {
-            // Se não houver dados para o dia selecionado, redefinimos tudo para vazio
-            document.getElementById("p1_text").value = "";
-            document.getElementById("p1_check").checked = false;
-            document.getElementById("p2_text").value = "";
-            document.getElementById("p2_check").checked = false;
-            document.getElementById("p3_text").value = "";
-            document.getElementById("p3_check").checked = false;
+        // Renderiza horários salvos
+        renderScheduleGrid(data.schedule || {});
+    } else {
+        // --- LIMPEZA COMPLETA QUANDO O DIA NÃO TEM DADOS ---
+        document.getElementById("p1_text").value = "";
+        document.getElementById("p1_check").checked = false;
+        document.getElementById("p2_text").value = "";
+        document.getElementById("p2_check").checked = false;
+        document.getElementById("p3_text").value = "";
+        document.getElementById("p3_check").checked = false;
 
-            document.getElementById("h1_check").checked = false;
-            document.getElementById("h2_check").checked = false;
-            document.getElementById("h3_check").checked = false;
+        document.getElementById("h1_check").checked = false;
+        document.getElementById("h2_check").checked = false;
+        document.getElementById("h3_check").checked = false;
 
-            waterGlasses = 0;
-            document.getElementById("waterCount").innerText = 0;
-            document.getElementById("waterTotal").innerText = `0 ml / 2000 ml`;
+        waterGlasses = 0;
+        document.getElementById("waterCount").innerText = 0;
+        document.getElementById("waterTotal").innerText = `0 ml / 2000 ml`;
 
-            document.getElementById("finIn").value = "";
-            document.getElementById("finOut").value = "";
-            document.getElementById("finBalance").innerText = `Saldo: R$ 0,00`;
+        document.getElementById("finIn").value = "";
+        document.getElementById("finOut").value = "";
+        document.getElementById("finBalance").innerText = `Saldo: R$ 0,00`;
 
-            document.getElementById("dailyNotes").value = "";
-            adjustHeight(document.getElementById("dailyNotes"));
+        document.getElementById("dailyNotes").value = "";
+        adjustHeight(document.getElementById("dailyNotes"));
 
-            attachments = {};
+        attachments = {};
 
-            // Renderiza os horários totalmente vazios
-            renderScheduleGrid({});
-        }
-
-        checkDailyBillsAlert();
+        // Força a recriação da grade de horários vazia
+        renderScheduleGrid({});
     }
 
-    window.onload = function() {
-        checkAuth();
+    checkDailyBillsAlert();
+}
     };
 </script>
 </body>
