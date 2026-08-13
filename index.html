@@ -143,7 +143,7 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             padding: 30px;
             border: 1px solid var(--border-color);
-            display: none; /* Oculto até realizar o login */
+            display: none;
         }
 
         .controls-bar {
@@ -495,7 +495,7 @@
 </head>
 <body>
 
-<!-- Tela de Autenticação / Login (Corrigida sem recarregar a página) -->
+<!-- Tela de Autenticação / Login -->
 <div id="loginOverlay" class="login-overlay">
     <div class="login-card">
         <h2 id="loginTitle"><i class="fa-solid fa-user-lock"></i> Entrar na Agenda</h2>
@@ -672,7 +672,6 @@
 </div>
 
 <script>
-    // --- LÓGICA DE AUTENTICAÇÃO ---
     let isRegisterMode = false;
 
     function checkAuth() {
@@ -749,11 +748,10 @@
         location.reload();
     }
 
-    // --- CÓDIGO DA AGENDA ---
     const quotes = [
         "Continue curiosa, continue estranha, continue gentil e não deixe ninguém dizer que você não é suficiente.",
         "Pequenos passos todos os dias levam a grandes resultados.",
-        "Foque no processo, o resultado virá naturally.",
+        "Foque no processo, o resultado virá naturalmente.",
         "Sua única competição é quem você foi ontem.",
         "Organizar o tempo é construir liberdade."
     ];
@@ -786,6 +784,7 @@
     });
 
     function adjustHeight(el) {
+        if (!el) return;
         el.style.height = "auto";
         el.style.height = el.scrollHeight + "px";
     }
@@ -806,7 +805,8 @@
     }
 
     function changeDate(days) {
-        const currentDate = new Date(datePicker.value + 'T00:00:00');
+        const parts = datePicker.value.split('-');
+        const currentDate = new Date(parts[0], parts[1] - 1, parts[2]);
         currentDate.setDate(currentDate.getDate() + days);
         datePicker.value = currentDate.toISOString().split('T')[0];
         loadAgenda();
@@ -871,7 +871,6 @@
         }
     }
 
-    // --- CONTAS A PAGAR ---
     function openBillsModal() {
         document.getElementById("billsModal").style.display = "flex";
         renderBillsTable();
@@ -1022,7 +1021,8 @@
     }
 
     function getPendingBillsForDate(targetDateStr) {
-        const targetDate = new Date(targetDateStr + 'T00:00:00');
+        const [tY, tM, tD] = targetDateStr.split('-').map(Number);
+        const targetDate = new Date(tY, tM - 1, tD);
         const targetDay = targetDate.getDate();
         const targetMonth = targetDate.getMonth();
         const targetYear = targetDate.getFullYear();
@@ -1091,7 +1091,6 @@
         }
     }
 
-    // --- CALENDÁRIO MENSUAL ---
     function openCalendarModal() {
         const [y, m, d] = datePicker.value.split('-');
         calCurrentDate = new Date(y, m - 1, 1);
@@ -1178,7 +1177,6 @@
         }
     }
 
-    // --- EMAIL / COPIAR RESUMO ---
     function sendEmail() {
         const dateStr = document.getElementById("selectedDate").value;
         let body = `📌 *RESUMO DA AGENDA DO DIA (${dateStr})*\n\n`;
@@ -1256,8 +1254,17 @@
     }
     setInterval(checkNotifications, 30000);
 
+    // FUNÇÃO DE SALVAMENTO CORRIGIDA
     function saveAgenda() {
         const selectedDate = datePicker.value;
+        if (!selectedDate) return;
+
+        const scheduleData = {};
+        hours.forEach(hour => {
+            const el = document.getElementById(`time_${hour}`);
+            if (el) scheduleData[hour] = el.value;
+        });
+
         const data = {
             p1_text: document.getElementById("p1_text").value,
             p1_check: document.getElementById("p1_check").checked,
@@ -1272,19 +1279,18 @@
             finIn: document.getElementById("finIn").value,
             finOut: document.getElementById("finOut").value,
             notes: document.getElementById("dailyNotes").value,
-            schedule: {},
+            schedule: scheduleData,
             attachments: attachments
         };
-
-        hours.forEach(hour => {
-            data.schedule[hour] = document.getElementById(`time_${hour}`).value;
-        });
 
         localStorage.setItem(`agenda_${selectedDate}`, JSON.stringify(data));
     }
 
+    // FUNÇÃO DE CARREGAMENTO CORRIGIDA
     function loadAgenda() {
         const selectedDate = datePicker.value;
+        if (!selectedDate) return;
+
         const [year, month, day] = selectedDate.split('-');
         updateDateDisplay(new Date(year, month - 1, day));
 
@@ -1292,54 +1298,78 @@
         document.getElementById('themeSelect').value = savedTheme;
         changeTheme(savedTheme);
 
-        document.querySelectorAll('input[type="text"], input[type="number"]').forEach(i => i.value = "");
-        document.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
-        document.getElementById("dailyNotes").value = "";
-        waterGlasses = 0;
-        attachments = {};
-        addWater(0);
-
         loadGlobalBills();
 
         const savedData = localStorage.getItem(`agenda_${selectedDate}`);
         if (savedData) {
             const data = JSON.parse(savedData);
             document.getElementById("p1_text").value = data.p1_text || "";
-            document.getElementById("p1_check").checked = data.p1_check || false;
+            document.getElementById("p1_check").checked = !!data.p1_check;
             document.getElementById("p2_text").value = data.p2_text || "";
-            document.getElementById("p2_check").checked = data.p2_check || false;
+            document.getElementById("p2_check").checked = !!data.p2_check;
             document.getElementById("p3_text").value = data.p3_text || "";
-            document.getElementById("p3_check").checked = data.p3_check || false;
+            document.getElementById("p3_check").checked = !!data.p3_check;
 
-            document.getElementById("h1_check").checked = data.h1_check || false;
-            document.getElementById("h2_check").checked = data.h2_check || false;
-            document.getElementById("h3_check").checked = data.h3_check || false;
+            document.getElementById("h1_check").checked = !!data.h1_check;
+            document.getElementById("h2_check").checked = !!data.h2_check;
+            document.getElementById("h3_check").checked = !!data.h3_check;
 
             waterGlasses = data.water || 0;
-            addWater(0);
+            document.getElementById("waterCount").innerText = waterGlasses;
+            document.getElementById("waterTotal").innerText = `${waterGlasses * 200} ml / 2000 ml`;
 
             document.getElementById("finIn").value = data.finIn || "";
             document.getElementById("finOut").value = data.finOut || "";
-            calcFinance();
+            
+            const inc = parseFloat(data.finIn) || 0;
+            const out = parseFloat(data.finOut) || 0;
+            document.getElementById("finBalance").innerText = `Saldo: R$ ${(inc - out).toFixed(2)}`;
 
             document.getElementById("dailyNotes").value = data.notes || "";
             adjustHeight(document.getElementById("dailyNotes"));
 
             attachments = data.attachments || {};
 
-            if (data.schedule) {
-                hours.forEach(hour => {
-                    const el = document.getElementById(`time_${hour}`);
-                    el.value = data.schedule[hour] || "";
-                    adjustHeight(el);
-                    renderAttachment(hour);
-                });
-            }
-        } else {
             hours.forEach(hour => {
                 const el = document.getElementById(`time_${hour}`);
-                el.value = "";
-                adjustHeight(el);
+                if (el) {
+                    el.value = (data.schedule && data.schedule[hour]) ? data.schedule[hour] : "";
+                    adjustHeight(el);
+                }
+                renderAttachment(hour);
+            });
+        } else {
+            // Limpa os campos se for um dia sem dados salvos
+            document.getElementById("p1_text").value = "";
+            document.getElementById("p1_check").checked = false;
+            document.getElementById("p2_text").value = "";
+            document.getElementById("p2_check").checked = false;
+            document.getElementById("p3_text").value = "";
+            document.getElementById("p3_check").checked = false;
+
+            document.getElementById("h1_check").checked = false;
+            document.getElementById("h2_check").checked = false;
+            document.getElementById("h3_check").checked = false;
+
+            waterGlasses = 0;
+            document.getElementById("waterCount").innerText = 0;
+            document.getElementById("waterTotal").innerText = `0 ml / 2000 ml`;
+
+            document.getElementById("finIn").value = "";
+            document.getElementById("finOut").value = "";
+            document.getElementById("finBalance").innerText = `Saldo: R$ 0,00`;
+
+            document.getElementById("dailyNotes").value = "";
+            adjustHeight(document.getElementById("dailyNotes"));
+
+            attachments = {};
+
+            hours.forEach(hour => {
+                const el = document.getElementById(`time_${hour}`);
+                if (el) {
+                    el.value = "";
+                    adjustHeight(el);
+                }
                 renderAttachment(hour);
             });
         }
@@ -1347,7 +1377,6 @@
         checkDailyBillsAlert();
     }
 
-    // Inicialização do sistema com checagem de Login
     window.onload = function() {
         checkAuth();
     };
